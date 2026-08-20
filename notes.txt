@@ -1,0 +1,115 @@
+
+npm.cmd install
+npm.cmd run compile
+
+
+Deploy the voting contract - NO ACCOUNT BLOCKED:
+PS C:\Users\21024362\Downloads\oth-summer-school-main\oth-summer-school-main> node deploy.js artifacts/Voting.json --gas 500000 --arg-string-array '[\"Music\",\"Mountains\",\"Fruits\"]' --arg-address-array '[]'
+Deploying Voting.json to Hedera Testnet ...
+  gas:  500000
+
+✅ Contract deployed successfully
+  Contract ID : 0.0.10148960
+  EVM address : 0x00000000000000000000000000000000009adc60
+
+
+CHECK RESULT:
+PS C:\Users\21024362\Downloads\oth-summer-school-main\oth-summer-school-main> node results.js 0.0.10148960
+Voting results
+  0: Music — 0 vote(s)
+  1: Mountains — 0 vote(s)
+  2: Fruits — 0 vote(s)
+
+
+ACCOUNT CAN VOTE:
+PS C:\Users\21024362\Downloads\oth-summer-school-main\oth-summer-school-main> node vote.js 0.0.10148960 0 VOTER_2 
+Vote from VOTER_2 for topic 0: SUCCESS
+Transaction: 0.0.10045795@1787216180.860868632
+
+
+CHECK RESULT:
+PS C:\Users\21024362\Downloads\oth-summer-school-main\oth-summer-school-main> node results.js 0.0.10148960       
+Voting results
+  0: Music — 1 vote(s)
+  1: Mountains — 0 vote(s)
+  2: Fruits — 0 vote(s)
+
+
+PROVE THAT ACCOUNT CAN ONLY VOTE ONCE:
+PS C:\Users\21024362\Downloads\oth-summer-school-main\oth-summer-school-main> node vote.js 0.0.10148960 0 VOTER_2
+Vote unsuccessful: receipt for transaction 0.0.10045795@1787216383.205413009 contained error status CONTRACT_REVERT_EXECUTED
+PS C:\Users\21024362\Downloads\oth-summer-school-main\oth-summer-school-main> node vote.js 0.0.10148960 1 VOTER_2 
+Vote unsuccessful: receipt for transaction 0.0.10045795@1787216401.432068128 contained error status CONTRACT_REVERT_EXECUTED
+
+--------------------------------------------
+
+DEPLOYMENT WITH BLOCKING ACCOUNT: 
+PS C:\Users\21024362\Downloads\oth-summer-school-main\oth-summer-school-main> node deploy.js artifacts/Voting.json --gas 500000 --arg-string-array '[\"Music\",\"Mountains\",\"Fruits\"]' --arg-address-array '[\"0.0.10116984\"]'
+Deploying Voting.json to Hedera Testnet ...
+  gas:  500000
+
+✅ Contract deployed successfully
+  Contract ID : 0.0.10149261
+  EVM address : 0x00000000000000000000000000000000009add8d
+  HashScan    : https://hashscan.io/testnet/contract/0.0.10149261
+
+
+IF BLOCKED ACCOUNT TRY TO VOTE: 
+PS C:\Users\21024362\Downloads\oth-summer-school-main\oth-summer-school-main> node vote.js 0.0.10149261 0 VOTER_1    
+Vote unsuccessful: this account is not allowed to vote.  
+
+
+CHECK RESULTS:
+PS C:\Users\21024362\Downloads\oth-summer-school-main\oth-summer-school-main> node results.js 0.0.10149261           
+Voting results                                                                                               
+  0: Music — 0 vote(s)
+  1: Mountains — 0 vote(s)
+  2: Fruits — 0 vote(s)
+
+
+VOTING WITH OKAY VOTER_2 ACCOUNT:
+PS C:\Users\21024362\Downloads\oth-summer-school-main\oth-summer-school-main> node vote.js 0.0.10149261 0 VOTER_2 
+Vote successful: VOTER_2 voted for topic 0.
+Transaction: 0.0.10045795@1787216971.457031310
+
+
+CHECK RESULTS - VOTER_2'S VOTE is SHOWN:
+PS C:\Users\21024362\Downloads\oth-summer-school-main\oth-summer-school-main> node results.js 0.0.10149261       
+Voting results
+  0: Music — 1 vote(s)
+  1: Mountains — 0 vote(s)
+  2: Fruits — 0 vote(s)
+
+
+IF VOTER_2 TRY VOTE SAME TOPIC AGAIN: 
+PS C:\Users\21024362\Downloads\oth-summer-school-main\oth-summer-school-main> node vote.js 0.0.10149261 0 VOTER_2
+Vote unsuccessful: receipt for transaction 0.0.10045795@1787217053.839145856 contained error status CONTRACT_REVERT_EXECUTED
+
+
+IF VOTER_2 TRY VOTE ANOTHER TOPIC: 
+PS C:\Users\21024362\Downloads\oth-summer-school-main\oth-summer-school-main> node vote.js 0.0.10149261 1 VOTER_2
+Vote unsuccessful: receipt for transaction 0.0.10045795@1787217102.732616594 contained error status CONTRACT_REVERT_EXECUTED
+
+
+VOTE RESULT - SUCCESSFULLY SHOW THAT ONE ACCOUNT CAN ONLY VOTE ONCE: 
+PS C:\Users\21024362\Downloads\oth-summer-school-main\oth-summer-school-main> node results.js 0.0.10149261       
+Voting results
+  0: Music — 1 vote(s)
+  1: Mountains — 0 vote(s)
+  2: Fruits — 0 vote(s)
+
+
+
+----------------------------
+why is this contract secure: 
+----------------------------
+It uses msg.sender, so one account cannot vote on behalf of another.
+hasVoted[msg.sender] prevents the same address voting twice.
+Denied accounts are checked on-chain, not only in JavaScript.
+Invalid topic numbers are rejected.
+Topics and denied accounts cannot be modified after deployment.
+vote() performs all validation before changing state.
+It makes no external calls, so there is no practical reentrancy path.
+Solidity 0.8 provides checked arithmetic, so vote-count overflow would revert rather than silently wrap.
+The function follows the recommended checks-before-effects structure.
+
